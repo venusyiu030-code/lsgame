@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>個人資料大冒險 - 橫屏闖關遊戲</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap');
+    
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #0f172a;
+      touch-action: manipulation;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .landscape-container {
+      width: 100vw;
+      height: 100vh;
+      max-width: 1280px;
+      max-height: 720px;
+      margin: auto;
+      position: relative;
+      background: linear-gradient(to bottom, #38bdf8 0%, #bae6fd 60%, #4ade80 60%, #22c55e 100%);
+      box-shadow: 0 0 50px rgba(0,0,0,0.5);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 8px solid #38bdf8;
+    }
+
+    /* Character walking track container */
+    .track-container {
+      position: relative;
+      width: 100%;
+      height: 60px;
+      margin-top: 8px;
+    }
+
+    /* Track line span from start node to end node */
+    .track-line {
+      position: absolute;
+      top: 50%;
+      left: 24px;
+      right: 24px;
+      height: 12px;
+      transform: translateY(-50%);
+      background: #fde047;
+      border: 3px solid #ca8a04;
+      border-radius: 6px;
+    }
+
+    /* Character transition effect */
+    .character-avatar {
+      transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Bounce Animation for Character */
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-bounce-slow {
+      animation: bounce-slow 1.5s infinite ease-in-out;
+    }
+
+    .option-card {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .option-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+    }
+    .option-card:active {
+      transform: translateY(2px) scale(0.98);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-2">
+
+<div class="landscape-container flex flex-col justify-between p-4 md:p-6">
+
+  <div class="w-full bg-white/90 backdrop-blur rounded-2xl p-3 shadow-lg border-2 border-sky-400 z-10">
+    <div class="flex justify-between items-center px-2">
+      <div class="flex items-center gap-2">
+        <span class="bg-amber-400 text-amber-950 font-black px-3 py-1 rounded-full text-sm md:text-base border-2 border-amber-600 shadow-sm flex items-center gap-1">
+          <i class="fa-solid fa-trophy"></i>個人資料大冒險
+        </span>
+        <span id="level-badge" class="bg-sky-500 text-white font-bold px-3 py-1 rounded-full text-xs md:text-sm">
+          第 1 / 6 關
+        </span>
+      </div>
+      <div>
+        <button onclick="restartGame()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs md:text-sm font-bold px-3 py-1.5 rounded-lg border-b-4 border-rose-700 active:border-b-0 shadow transition flex items-center gap-1">
+          <i class="fa-solid fa-rotate-right"></i>重新開始
+        </button>
+      </div>
+    </div>
+
+    <!-- TRACK MAP (Flex node checkpoints) -->
+    <div class="track-container px-6">
+      <!-- Yellow track line -->
+      <div class="track-line"></div>
+
+      <!-- Checkpoint Nodes Container -->
+      <div id="checkpoint-nodes" class="relative w-full h-full flex justify-between items-center">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <div class="my-auto py-2 z-10 w-full max-w-5xl mx-auto">
+    <!-- Question Title Box -->
+    <div class="bg-white/95 rounded-2xl p-3 md:p-4 shadow-xl border-4 border-amber-400 text-center mb-4">
+      <h2 class="text-lg md:text-2xl font-black text-slate-800 tracking-wide flex items-center justify-center gap-2">
+        <i class="fa-solid fa-circle-question text-sky-500 text-2xl"></i>
+        <span id="question-title">哪一個是個人資料？</span>
+      </h2>
+    </div>
+
+    <!-- 2 OPTION CARDS (Grid Side-by-side with Rectangular Image Boxes) -->
+    <div class="grid grid-cols-2 gap-4 md:gap-6 px-2">
+      <!-- Option A -->
+      <button id="btn-opt-a" onclick="checkAnswer('A')" class="option-card bg-white rounded-2xl p-3 md:p-5 border-4 border-sky-200 shadow-xl flex flex-col items-center justify-center text-center cursor-pointer group hover:border-sky-400">
+        <!-- Rectangular Image Container (w-full h-32 md:h-44) -->
+        <div id="img-container-a" class="w-full h-32 md:h-44 rounded-xl bg-sky-50 border-2 border-sky-100 flex items-center justify-center mb-3 overflow-hidden shadow-inner p-2">
+          <!-- Dynamic Image Injected Here -->
+        </div>
+        <span id="text-opt-a" class="text-sm md:text-lg font-bold text-slate-800 group-hover:text-sky-600">
+          選項 A 載入中
+        </span>
+      </button>
+
+      <!-- Option B -->
+      <button id="btn-opt-b" onclick="checkAnswer('B')" class="option-card bg-white rounded-2xl p-3 md:p-5 border-4 border-sky-200 shadow-xl flex flex-col items-center justify-center text-center cursor-pointer group hover:border-sky-400">
+        <!-- Rectangular Image Container (w-full h-32 md:h-44) -->
+        <div id="img-container-b" class="w-full h-32 md:h-44 rounded-xl bg-sky-50 border-2 border-sky-100 flex items-center justify-center mb-3 overflow-hidden shadow-inner p-2">
+          <!-- Dynamic Image Injected Here -->
+        </div>
+        <span id="text-opt-b" class="text-sm md:text-lg font-bold text-slate-800 group-hover:text-sky-600">
+          選項 B 載入中
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <div class="text-center z-10 pb-1">
+    <p id="footer-hint" class="text-white text-xs md:text-sm font-bold drop-shadow-md bg-black/30 inline-block px-4 py-1 rounded-full border border-white/20">
+      💡 提示：點擊包含「個人私隱/個人資料」的正確選項即可推進闖關！
+    </p>
+  </div>
+</div>
+
+<!-- MODAL: BASIC SUCCESS WIN (Prompting for Bonus Challenge) -->
+<div id="modal-success" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full text-center border-8 border-amber-400 shadow-2xl">
+    <div class="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-3 border-4 border-amber-300 shadow">
+      <i class="fa-solid fa-trophy"></i>
+    </div>
+    <h2 class="text-2xl md:text-3xl font-black text-slate-800 mb-2">🎉 恭喜通過基礎關卡！</h2>
+    <p class="text-slate-600 font-bold mb-5 text-sm md:text-base">
+      你已經成功學會分辨常見的個人資料！準備好挑戰難度更高的「隱含私隱陷阱題」了嗎？
+    </p>
+    <div class="flex flex-col gap-3">
+      <button onclick="startBonusLevels()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-black text-lg py-3 rounded-2xl border-b-4 border-amber-700 shadow-lg active:border-b-0 transition flex items-center justify-center gap-2">
+        解鎖終極陷阱挑戰 🌟
+      </button>
+      <button onclick="restartGame()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-sm py-2 rounded-xl transition">
+        重新體驗基礎關 🔄
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ULTIMATE VICTORY (Bonus Completed) -->
+<div id="modal-ultimate" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full text-center border-8 border-purple-500 shadow-2xl">
+    <div class="w-20 h-20 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-3 border-4 border-purple-300 shadow">
+      <i class="fa-solid fa-crown"></i>
+    </div>
+    <h2 class="text-2xl md:text-3xl font-black text-purple-900 mb-2">🏆 網絡安全大偵探！</h2>
+    <p id="bonus-insight-text" class="text-slate-700 font-bold text-xs md:text-sm bg-purple-50 p-3 rounded-xl border border-purple-200 text-left mb-5">
+      💡 <b>終極秘訣點撥：</b><br>
+      即使沒有寫下姓名或住址門牌，照片上的<b>校徽/校服款式</b>或<b>精準生活地標</b>，都會讓壞人掌握你的出沒規律！上網分享照片前要看清楚喔！
+    </p>
+    <button onclick="restartGame()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg py-3 rounded-2xl border-b-4 border-emerald-700 shadow-lg active:border-b-0 transition">
+      太棒了！重新玩一次 🚀
+    </button>
+  </div>
+</div>
+
+<!-- MODAL: FAIL RETRY -->
+<div id="modal-fail" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full text-center border-8 border-rose-400 shadow-2xl">
+    <div class="w-20 h-20 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border-4 border-rose-300 shadow">
+      <i class="fa-solid fa-face-frown"></i>
+    </div>
+    <h2 class="text-2xl md:text-3xl font-black text-slate-800 mb-2">答錯囉！再接再勵！</h2>
+    <p id="fail-explanation" class="text-rose-600 font-bold mb-6 text-sm md:text-base bg-rose-50 p-3 rounded-xl border border-rose-200">
+      再想想看，這個選項屬於公開的喜好或一般事物，不是個人私隱喔！
+    </p>
+    <button onclick="restartGame()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-black text-lg py-3 rounded-2xl border-b-4 border-sky-700 shadow-lg active:border-b-0 transition">
+      重新闖關 🔄
+    </button>
+  </div>
+</div>
+
+<script>
+  let currentLevel = 0;
+  let activeQuestions = []; // Dynamic list based on mode
+
+  // =========================================================================
+  // 📌 圖片路徑替換說明：
+  // 您可以在下方 imageSrc 中，填入您的本地圖片路徑（如："images/q1_a.png"）
+  // =========================================================================
+
+  // 1. 基礎關卡（6 題）
+  const baseQuestions = [
+    {
+      title: "1. 哪一個是個人資料？",
+      correct: "A",
+      explanation: "全名（青小松）可以清楚識別你的個人身份，屬於個人資料！最喜歡的顏色只是個人喜好。",
+      optA: {
+        text: "A. 你的全名：青小松",
+        imageSrc: "studentcard.png",
+        fallbackText: "全名卡 A"
+      },
+      optB: {
+        text: "B. 你最喜歡的顏色：藍色",
+        imageSrc: "blue.png",
+        fallbackText: "顏色卡 B"
+      }
+    },
+    {
+      title: "2. 哪一個是個人資料？",
+      correct: "B",
+      explanation: "住址會揭露你居住的具體地點，屬於非常重要的個人私隱！食物喜好則是一般喜好。",
+      optA: {
+        text: "A. 你最喜歡吃的食物：魚蛋",
+        imageSrc: "fishball.png",
+        fallbackText: "食物卡 A"
+      },
+      optB: {
+        text: "B. 你家的住址：屯門湖景邨六座703室",
+        imageSrc: "address.png",
+        fallbackText: "住址卡 B"
+      }
+    },
+    {
+      title: "3. 哪一個是個人資料？",
+      correct: "A",
+      explanation: "電話號碼可以讓陌生人直接聯絡到你或家人，屬於重要個人私隱！",
+      optA: {
+        text: "A. 你的電話號碼：2465 2881",
+        imageSrc: "tel.png",
+        fallbackText: "電話卡 A"
+      },
+      optB: {
+        text: "B. 你最喜歡的動物：小狗",
+        imageSrc: "dog.png",
+        fallbackText: "動物卡 B"
+      }
+    },
+    {
+      title: "4. 哪一個是個人資料？",
+      correct: "B",
+      explanation: "就讀的學校和班別會讓人精準找到你日常上學的地點，切勿隨便公開！",
+      optA: {
+        text: "A. 你最喜歡的卡通人物：多啦A夢",
+        imageSrc: "duola.png",
+        fallbackText: "卡通卡 A"
+      },
+      optB: {
+        text: "B. 你就讀的學校和班別：道教青松小學 湖景邨 2D 班",
+        imageSrc: "studentcard.png",
+        fallbackText: "學校卡 B"
+      }
+    },
+    {
+      title: "5. 哪一個是個人資料？",
+      correct: "A",
+      explanation: "出生日期屬於精準個人身份資料，常被用於身份核實，要小心保護！",
+      optA: {
+        text: "A. 你的出生日期：2018 年 10 月 7 日",
+        imageSrc: "idcard.png",
+        fallbackText: "生日卡 A"
+      },
+      optB: {
+        text: "B. 你最喜歡的季節：夏天",
+        imageSrc: "sun.png",
+        fallbackText: "季節卡 B"
+      }
+    },
+    {
+      title: "6. 哪一個是個人資料？",
+      correct: "B",
+      explanation: "你的肖像照片直接顯示你的個人容貌特徵，是核心個人私隱！",
+      optA: {
+        text: "A. 你最喜歡的運動：跑步",
+        imageSrc: "run.png",
+        fallbackText: "運動卡 A"
+      },
+      optB: {
+        text: "B. 你的樣子（照片）",
+        imageSrc: "photo.png",
+        fallbackText: "相片卡 B"
+      }
+    }
+  ];
+
+  // 2. 終極陷阱進階關卡（2 題）
+  const bonusQuestions = [
+    {
+      title: "🌟 陷阱關 1：哪一個包含了個人資料？（隱含位置）",
+      correct: "B",
+      explanation: "💡 混淆點：雖然沒有寫出學校名字，但照片中的「校徽與校服」會讓壞人直接知道你讀哪間學校！",
+      isBonus: true,
+      optA: {
+        text: "A. 你在公園畫的一幅風景畫",
+        imageSrc: "view.png",
+        fallbackText: "風景畫 A"
+      },
+      optB: {
+        text: "B. 你穿着校服、露出校徽的照片",
+        imageSrc: "school.png",
+        fallbackText: "校服照 B"
+      }
+    },
+    {
+      title: "🌟 陷阱關 2：哪一個包含了個人資料？（地標與生活圈）",
+      correct: "B",
+      explanation: "💡 混淆點：雖然沒有寫具體門牌號碼，但「放學時間+精準地標（屯門湖景邨麥當勞）」會透露你的日常出沒規律！",
+      isBonus: true,
+      optA: {
+        text: "A. 你最喜歡吃的一盤美味意粉",
+        imageSrc: "paste.png",
+        fallbackText: "意粉卡 A"
+      },
+      optB: {
+        text: "B. 『我每天放學都會去屯門湖景邨麥當勞』",
+        imageSrc: "MM.png",
+        fallbackText: "地標卡 B"
+      }
+    }
+  ];
+
+  // Initialize App
+  window.onload = function() {
+    activeQuestions = [...baseQuestions];
+    initCheckpointsUI();
+    loadQuestion();
+    window.addEventListener('resize', updateAvatarPosition);
+  };
+
+  // Build Checkpoint Flags for Map Header Dynamically
+  function initCheckpointsUI() {
+    const container = document.getElementById('checkpoint-nodes');
+    let html = `
+      <div class="flex flex-col items-center z-10">
+        <span class="text-[10px] md:text-xs font-bold bg-white border border-slate-300 px-1.5 py-0.5 rounded-full shadow mb-1">起點</span>
+        <div class="w-6 h-6 md:w-7 md:h-7 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-xs shadow"><i class="fa-solid fa-flag"></i></div>
+      </div>
+    `;
+
+    activeQuestions.forEach((q, idx) => {
+      const isEnd = idx === activeQuestions.length - 1;
+      const labelText = q.isBonus ? `陷阱${idx + 1}` : `關卡${idx + 1}`;
+      const iconContent = isEnd ? '<i class="fa-solid fa-crown"></i>' : (idx + 1);
+
+      html += `
+        <div class="flex flex-col items-center z-10">
+          <span class="text-[10px] md:text-xs font-bold bg-white border border-slate-300 px-1.5 py-0.5 rounded-full shadow mb-1">${labelText}</span>
+          <div id="flag-${idx + 1}" class="w-6 h-6 md:w-7 md:h-7 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-slate-600 text-xs shadow font-bold">${iconContent}</div>
+        </div>
+      `;
+    });
+
+    // Character Avatar Container Attached Inside Track
+    html += `
+      <div id="character-avatar" class="character-avatar absolute -top-3 w-12 h-12 md:w-16 md:h-16 z-20 animate-bounce-slow" style="left: 0px; transform: translateX(-50%);">
+        <img id="char-img" class="w-full h-full object-contain drop-shadow-md" src="xiaosong.png" alt="主角" onerror="this.onerror=null; this.src='https://placehold.co/100x100/38bdf8/ffffff?text=主角';">
+      </div>
+    `;
+
+    container.innerHTML = html;
+  }
+
+  // Calculate precise horizontal position for avatar along checkpoints
+  function updateAvatarPosition() {
+    const trackContainer = document.getElementById('checkpoint-nodes');
+    if (!trackContainer) return;
+
+    const checkpointNodes = trackContainer.children;
+    if (currentLevel < checkpointNodes.length - 1) {
+      const targetNode = checkpointNodes[currentLevel];
+      const targetLeft = targetNode.offsetLeft + (targetNode.offsetWidth / 2);
+      
+      const avatar = document.getElementById('character-avatar');
+      if (avatar) {
+        avatar.style.left = `${targetLeft}px`;
+      }
+    }
+  }
+
+  // Helper function to create image element with reliable fallback and clean design
+  function createOptionImageHTML(imageSrc, fallbackText) {
+    return `
+      <div class="relative w-full h-full flex items-center justify-center">
+        <img src="${imageSrc}" alt="${fallbackText}" class="w-full h-full object-contain drop-shadow" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+        <div class="absolute inset-0 bg-sky-50 flex-col items-center justify-center text-sky-600 font-bold text-xs md:text-sm hidden rounded-lg border-2 border-dashed border-sky-300 p-2">
+          <i class="fa-solid fa-image text-2xl mb-1 text-sky-400"></i>
+          <span>${fallbackText}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Load question content
+  function loadQuestion() {
+    const q = activeQuestions[currentLevel];
+    document.getElementById('question-title').innerText = q.title;
+    document.getElementById('level-badge').innerText = `第 ${currentLevel + 1} / ${activeQuestions.length} 關`;
+    
+    // Set Options
+    document.getElementById('text-opt-a').innerText = q.optA.text;
+    document.getElementById('img-container-a').innerHTML = createOptionImageHTML(q.optA.imageSrc, q.optA.fallbackText);
+    
+    document.getElementById('text-opt-b').innerText = q.optB.text;
+    document.getElementById('img-container-b').innerHTML = createOptionImageHTML(q.optB.imageSrc, q.optB.fallbackText);
+
+    // Update Avatar Position dynamically
+    setTimeout(updateAvatarPosition, 50);
+
+    // Update Checkpoint Colors
+    for(let i = 1; i <= activeQuestions.length; i++) {
+      const flag = document.getElementById(`flag-${i}`);
+      if (flag) {
+        if (i <= currentLevel) {
+          flag.className = "w-6 h-6 md:w-7 md:h-7 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-xs shadow font-bold";
+        } else {
+          flag.className = "w-6 h-6 md:w-7 md:h-7 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-slate-600 text-xs shadow font-bold";
+        }
+      }
+    }
+  }
+
+  // Answer validation
+  function checkAnswer(selectedOpt) {
+    const q = activeQuestions[currentLevel];
+
+    if (selectedOpt === q.correct) {
+      currentLevel++;
+      if (currentLevel >= activeQuestions.length) {
+        updateAvatarPosition();
+        setTimeout(() => {
+          if (q.isBonus) {
+            // Completed Bonus Levels
+            document.getElementById('modal-ultimate').classList.remove('hidden');
+          } else {
+            // Completed Basic Levels
+            document.getElementById('modal-success').classList.remove('hidden');
+          }
+        }, 500);
+      } else {
+        loadQuestion();
+      }
+    } else {
+      // Show Wrong Answer Modal
+      document.getElementById('fail-explanation').innerText = `❌ 答錯囉！${q.explanation}`;
+      document.getElementById('modal-fail').classList.remove('hidden');
+    }
+  }
+
+  // Start Bonus Challenge Mode
+  function startBonusLevels() {
+    activeQuestions = [...bonusQuestions];
+    currentLevel = 0;
+    document.getElementById('modal-success').classList.add('hidden');
+    initCheckpointsUI();
+    loadQuestion();
+  }
+
+  // Restart Game
+  function restartGame() {
+    activeQuestions = [...baseQuestions];
+    currentLevel = 0;
+    document.getElementById('modal-success').classList.add('hidden');
+    document.getElementById('modal-ultimate').classList.add('hidden');
+    document.getElementById('modal-fail').classList.add('hidden');
+    initCheckpointsUI();
+    loadQuestion();
+  }
+</script>
+</body>
+</html>
